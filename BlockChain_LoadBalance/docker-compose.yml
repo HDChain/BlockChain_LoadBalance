@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  loadbalance:
+    image: ${DOCKER_REGISTRY}loadbalance
+    build:
+      context: .
+      dockerfile: LoadBalance/Dockerfile
