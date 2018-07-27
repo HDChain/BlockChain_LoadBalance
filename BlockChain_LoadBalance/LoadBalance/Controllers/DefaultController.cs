@@ -16,8 +16,13 @@ namespace LoadBalance.Controllers
             return "ok";
         }
 
+        [HttpGet]
+        public string GetPreferServer(int chainid,string address) {
 
 
+
+            return string.Empty;
+        }
 
     }
 }
