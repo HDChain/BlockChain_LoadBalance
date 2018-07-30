@@ -2,10 +2,19 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Timers;
+using LoadBalance.Models;
 
 namespace LoadBalance.NodeCheckers
 {
     public interface INodeChecker {
+
+        void SetConfig(int chainid, ChainType chainType, ServerDefine server);
+
+        ServerDefine GetConfig();
+
+        int GetChainId();
+
         /// <summary>
         /// Get Chain Server Current Block Chain Number
         /// </summary>
@@ -35,6 +44,12 @@ namespace LoadBalance.NodeCheckers
         /// <param name="address"></param>
         /// <returns></returns>
         int GetUserPendingTransactionCount(string address);
+
+        Timer GetTimer();
+
+        void Start();
+
+        void Destory();
 
     }
 }

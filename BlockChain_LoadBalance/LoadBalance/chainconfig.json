@@ -1,0 +1,15 @@
+﻿{
+  "Chains": [
+    {
+      "ChainId": 1,
+      "ChainType": "Eth",
+      "Servers": [
+        {
+          "Rpc": "http://127.0.0.1:8145",
+          "Ws": "http://127.0.0.1:8146",
+          "RpcApi": [ "Eth" ]
+        }
+      ] 
+    }
+  ] 
+}
