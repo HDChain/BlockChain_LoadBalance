@@ -136,6 +136,37 @@ namespace LoadBalance.NodeCheckers
             }
         }
 
+        public bool HasTransaction(string txid) {
+            try {
+                using (var client = new HttpClient()) {
+                    var resp = client.PostAsync(
+                        new Uri(_serverDefine.Rpc), 
+                        new StringContent(
+                            Newtonsoft.Json.JsonConvert.SerializeObject(
+                                new JsonRpcReq() {
+                                    Method = "eth_getTransactionByHash",
+                                    Params = new object[]{txid}
+                                }), Encoding.UTF8, "application/json")).Result;
+
+                    if (!resp.IsSuccessStatusCode) {
+                        return false;
+                    }
+
+                    var jobj = JObject.Parse(resp.Content.ReadAsStringAsync().Result);
+
+                    if (jobj["result"] == null) {
+                        return false;
+                    }
+
+                    return true;
+                }
+            } catch (Exception ex) {
+                Logger.Error(ex);
+            }
+
+            return false;
+        }
+
         /// <summary>
         ///
         /// in time tick check follow list 

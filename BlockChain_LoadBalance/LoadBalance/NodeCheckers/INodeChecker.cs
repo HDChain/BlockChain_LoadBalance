@@ -51,5 +51,12 @@ namespace LoadBalance.NodeCheckers
 
         void Destory();
 
+        /// <summary>
+        /// check node server has the tx
+        /// </summary>
+        /// <param name="txid"></param>
+        /// <returns></returns>
+        bool HasTransaction(string txid);
+
     }
 }
