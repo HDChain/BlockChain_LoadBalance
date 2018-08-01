@@ -25,6 +25,24 @@ namespace LoadBalance.Models {
         [JsonProperty("id")]
         public int Id => GetId();
     }
+
+    public class JsonRpcClientReq {
+
+        [JsonProperty("jsonrpc")]
+        public string JsonRpc => "2.0";
+
+        [JsonProperty("method")]
+        public string Method { get; set; }
+
+        [JsonProperty("params")]
+        public object[] Params {
+            get;
+            set;
+        }
+
+        [JsonProperty("id")]
+        public int Id { get; set; }
+    }
      
     /// <summary>
     ///     请求基类

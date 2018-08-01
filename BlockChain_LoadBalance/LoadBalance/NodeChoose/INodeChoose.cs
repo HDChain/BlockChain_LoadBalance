@@ -7,5 +7,7 @@ namespace LoadBalance.NodeChoose
 {
     public interface INodeChoose {
         string ChooseServer(int chainid, string address);
+
+        string ChooseServer(int chainid);
     }
 }

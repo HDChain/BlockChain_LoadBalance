@@ -15,6 +15,8 @@ namespace LoadBalance.NodeCheckers
 
         int GetChainId();
 
+        ChainType GetChainType();
+
         /// <summary>
         /// Get Chain Server Current Block Chain Number
         /// </summary>

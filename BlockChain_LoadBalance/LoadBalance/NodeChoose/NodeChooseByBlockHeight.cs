@@ -28,5 +28,19 @@ namespace LoadBalance.NodeChoose
 
             return rpc;
         }
+
+        public string ChooseServer(int chainid) {
+
+            var nodes = NodeChecker.Instance.FindCheckerByChainId(chainid);
+            if (nodes.Count == 0) {
+                return String.Empty;
+            }
+            var first = nodes.OrderByDescending(n => n.GetBlockNumber()).First();
+
+            var rpc = first.GetConfig().Rpc;
+
+            return rpc;
+
+        }
     }
 }

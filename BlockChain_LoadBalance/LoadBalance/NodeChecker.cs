@@ -73,5 +73,17 @@ namespace LoadBalance
             
             return node;
         }
+
+        public List<INodeChecker> FindCheckerByChainType(ChainType chainType) {
+            List<INodeChecker> node = new List<INodeChecker>();
+
+            foreach (var nodeChecker in _checkers) {
+                if (nodeChecker.GetChainType() == chainType) {
+                    node.Add(nodeChecker);
+                }
+            }
+            
+            return node;
+        }
     }
 }

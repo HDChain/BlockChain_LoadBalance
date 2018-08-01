@@ -17,7 +17,28 @@ namespace LoadBalance.Models
     /// </summary>
     public class AlarmMgr : Singleton<AlarmMgr>
     {
+        public void OnServerNoResponse(int chainid,ServerDefine serverDefine) {
 
+        }
+
+        public void OnServerNotSyncing(int chainid,ServerDefine serverDefine) {
+
+        }
+
+        public void OnServerSyncTimeout(int chainid, ServerDefine serverDefine) {
+
+        }
+
+
+        #region smtp alarm
+
+        
+
+
+
+
+
+        #endregion
 
 
     }

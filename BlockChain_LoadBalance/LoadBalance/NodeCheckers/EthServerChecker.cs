@@ -31,6 +31,7 @@ namespace LoadBalance.NodeCheckers
         private int _peerCount = 0;
         private int _chainId = 0;
         private bool _isClosed = false;
+        private ChainType _chainType = ChainType.None;
 
         private Dictionary<int,string>_wsSubScriptionId = new Dictionary<int, string>();
 
@@ -48,6 +49,7 @@ namespace LoadBalance.NodeCheckers
         public void SetConfig(int chainid, ChainType chainType, ServerDefine server) {
             _serverDefine = server;
             _chainId = chainid;
+            _chainType = chainType;
 
             if (!string.IsNullOrEmpty(server.Ws)) {
                 _binaryWriter = new BinaryWriter(_memoryStream);
@@ -62,6 +64,10 @@ namespace LoadBalance.NodeCheckers
 
         public int GetChainId() {
             return _chainId;
+        }
+
+        public ChainType GetChainType() {
+            return _chainType;
         }
 
         public long GetBlockNumber() {

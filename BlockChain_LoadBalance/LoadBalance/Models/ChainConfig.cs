@@ -14,13 +14,19 @@ namespace LoadBalance.Models
     public enum ChainType {
         Eth,
 
+
+
+
+
+
+        None,
     }
 
 
     public class ChainDefine {
         public int ChainId { get; set; }
 
-        public ChainType ChainType { get; set; }
+        public ChainType ChainType { get; set; } = ChainType.None;
 
 
         public ServerDefine[] Servers { get; set; }
