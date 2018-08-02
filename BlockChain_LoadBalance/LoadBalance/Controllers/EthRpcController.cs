@@ -97,7 +97,7 @@ namespace LoadBalance.Controllers
         }
 
         static EthRpcController() {
-            var chooseType = Startup.Configuration.GetValue<string>("NodeChoose:Choose");
+            var chooseType = Startup.Configuration.GetValue<string>("EthNodeChoose:Choose");
 
             Logger.Info($"eth choose : {chooseType} ");
 
