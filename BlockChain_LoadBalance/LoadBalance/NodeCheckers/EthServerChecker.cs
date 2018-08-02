@@ -81,38 +81,7 @@ namespace LoadBalance.NodeCheckers {
         }
 
         public int GetPeersCount() {
-            if (!_serverDefine.RpcApi.Contains("admin"))
-                return -1;
-
-            try {
-                using (var client = new HttpClient()) {
-                    var resp = client.PostAsync(
-                        new Uri(_serverDefine.Rpc),
-                        new StringContent(
-                            JsonConvert.SerializeObject(
-                                new JsonRpcReq {
-                                    Method = "admin_peers"
-                                }),
-                            Encoding.UTF8,
-                            "application/json")).Result;
-
-                    if (!resp.IsSuccessStatusCode)
-                        return -1;
-
-                    var jobj = JArray.Parse(resp.Content.ReadAsStringAsync().Result);
-
-                    ResetErrorCount();
-
-                    _peerCount = jobj.Count;
-
-                    return _peerCount;
-                }
-            } catch (Exception ex) {
-                Logger.Error(ex.Message);
-                AddErrorCount();
-            }
-
-            return 0;
+            return _peerCount;
         }
 
         public long GetLastestBlockTimeTicker() {
@@ -221,7 +190,7 @@ namespace LoadBalance.NodeCheckers {
             _timer.Stop();
 
             try {
-                var number = GetEthBlockNumber();
+                var number = UpdateEthBlockNumber();
 
                 if (number == -1) {
                     CheckEnd();
@@ -230,13 +199,15 @@ namespace LoadBalance.NodeCheckers {
 
                 _curBlockNumber = number;
 
-                var blocktime = GetLastBlockTime();
+                var blocktime = UpdateLastBlockTime();
                 if (blocktime == -1) {
                     CheckEnd();
                     return;
                 }
 
                 _lastestBlockTime = blocktime;
+
+                _peerCount = UpdatePeersCount();
             } catch (Exception ex) {
                 Logger.Error(ex);
             }
@@ -244,11 +215,75 @@ namespace LoadBalance.NodeCheckers {
             CheckEnd();
         }
 
+        private int UpdatePeersCount() {
+            if (_serverDefine.RpcApi.Contains("net")) {
+                try {
+                    using (var client = new HttpClient()) {
+                        var resp = client.PostAsync(
+                            new Uri(_serverDefine.Rpc),
+                            new StringContent(
+                                JsonConvert.SerializeObject(
+                                    new JsonRpcReq {
+                                        Method = "net_peerCount"
+                                    }),
+                                Encoding.UTF8,
+                                "application/json")).Result;
+
+                        if (!resp.IsSuccessStatusCode)
+                            return -1;
+
+                        var jobj = JObject.Parse(resp.Content.ReadAsStringAsync().Result);
+                        _peerCount = (int) BigInteger.Parse(jobj.Value<string>("result").Replace("0x", ""), NumberStyles.HexNumber);
+
+                        ResetErrorCount();
+
+                        return _peerCount;
+                    }
+                } catch (Exception ex) {
+                    Logger.Error(ex.Message);
+                    AddErrorCount();
+                }
+            }
+            
+            if (!_serverDefine.RpcApi.Contains("admin"))
+                return -1;
+
+            try {
+                using (var client = new HttpClient()) {
+                    var resp = client.PostAsync(
+                        new Uri(_serverDefine.Rpc),
+                        new StringContent(
+                            JsonConvert.SerializeObject(
+                                new JsonRpcReq {
+                                    Method = "admin_peers"
+                                }),
+                            Encoding.UTF8,
+                            "application/json")).Result;
+
+                    if (!resp.IsSuccessStatusCode)
+                        return -1;
+
+                    var jobj = JArray.Parse(resp.Content.ReadAsStringAsync().Result);
+
+                    ResetErrorCount();
+
+                    _peerCount = jobj.Count;
+
+                    return _peerCount;
+                }
+            } catch (Exception ex) {
+                Logger.Error(ex.Message);
+                AddErrorCount();
+            }
+
+            return 0;
+        }
+
         private void CheckEnd() {
             _timer.Start();
         }
 
-        private long GetEthBlockNumber() {
+        private long UpdateEthBlockNumber() {
             try {
                 using (var client = new HttpClient()) {
                     var resp = client.PostAsync(
@@ -280,7 +315,7 @@ namespace LoadBalance.NodeCheckers {
             return -1;
         }
 
-        private long GetLastBlockTime() {
+        private long UpdateLastBlockTime() {
             try {
                 using (var client = new HttpClient()) {
                     var resp = client.PostAsync(

@@ -7,7 +7,7 @@
         {
           "Rpc": "http://127.0.0.1:8145",
           "Ws": "ws://127.0.0.1:8146",
-          "RpcApi": [ "Eth" ]
+          "RpcApi": [ "eth","net","admin" ]
         }
       ] 
     }
