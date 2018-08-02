@@ -13,7 +13,7 @@ namespace LoadBalance
 {
     public class NodeChecker :Singleton<NodeChecker> {
 
-        private List<INodeChecker>_checkers = new List<INodeChecker>();
+        private readonly List<INodeChecker>_checkers = new List<INodeChecker>();
         
         private static readonly ILog Logger = LogManager.GetLogger(Log4NetCore.CoreRepository, typeof(NodeChecker));
 
@@ -45,9 +45,6 @@ namespace LoadBalance
                         default:
                             throw new ArgumentOutOfRangeException();
                     }
-
-
-
                 }
             }
         }
@@ -62,11 +59,17 @@ namespace LoadBalance
 
         }
 
+        public void Stop() {
+            foreach (var nodeChecker in _checkers) {
+                nodeChecker.Stop();
+            }
+        }
+
         public List<INodeChecker> FindCheckerByChainId(int chainid) {
             List<INodeChecker> node = new List<INodeChecker>();
 
             foreach (var nodeChecker in _checkers) {
-                if (nodeChecker.GetChainId() == chainid) {
+                if (nodeChecker.IsOnline() && nodeChecker.GetChainId() == chainid) {
                     node.Add(nodeChecker);
                 }
             }
@@ -78,7 +81,7 @@ namespace LoadBalance
             List<INodeChecker> node = new List<INodeChecker>();
 
             foreach (var nodeChecker in _checkers) {
-                if (nodeChecker.GetChainType() == chainType) {
+                if (nodeChecker.IsOnline() && nodeChecker.GetChainType() == chainType) {
                     node.Add(nodeChecker);
                 }
             }

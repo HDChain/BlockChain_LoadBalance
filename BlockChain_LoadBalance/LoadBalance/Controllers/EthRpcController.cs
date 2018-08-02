@@ -10,6 +10,7 @@ using LoadBalance.Models;
 using LoadBalance.NodeChoose;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Nethereum.Signer;
 
 namespace LoadBalance.Controllers
@@ -28,59 +29,86 @@ namespace LoadBalance.Controllers
     public class EthRpcController : ControllerBase
     {
         private static readonly ILog Logger = LogManager.GetLogger(Log4NetCore.CoreRepository, typeof(EthRpcController));
-        private static INodeChoose NodeChoose = new NodeChooseByBlockHeight(); 
+        private static INodeChoose NodeChoose = null;
 
         [HttpGet]
         public IActionResult Get() {
-            
             return new OkResult();
         }
 
         [HttpPost]
         public async Task<IActionResult> Post(JsonRpcClientReq req,int chainid = 0) {
 
+            if (chainid == 0) {
+                return BadRequest("chainid error");
+            }
+
             switch (req.Method) {
-                case "eth_sendRawTransaction":
+                case "eth_sendRawTransaction": {
                     var signer = new TransactionSigner();
 
                     var addr = signer.GetSenderAddress(req.Params[0].ToString());
-                    NodeChoose.ChooseServer(chainid, addr);
-                    break;
-                default:
+                    var rpc = NodeChoose.ChooseServer(chainid, addr);
 
+                    if (string.IsNullOrEmpty(rpc)) {
+                        return BadRequest("not find suitable rpc server");
+                    }
+
+                    var sendResult = await SendRequest(req, rpc);
+                    return sendResult.response;
+                }
+                default: {
                     var rpc = NodeChoose.ChooseServer(chainid);
                     if (string.IsNullOrEmpty(rpc)) {
-                        return BadRequest("chainid error");
+                        return BadRequest("not find suitable rpc server");
                     }
 
-                    try {
-                        using (var client = new HttpClient()) {
-                            var resp = await client.PostAsync(rpc, 
-                                new StringContent(
-                                    Newtonsoft.Json.JsonConvert.SerializeObject(req), 
-                                    Encoding.UTF8, 
-                                    "application/json"));
-
-                            if (!resp.IsSuccessStatusCode) {
-                                return BadRequest(await resp.Content.ReadAsStringAsync());
-                            }
-
-                            return new ContentResult() {
-                                Content = await resp.Content.ReadAsStringAsync(),
-                                ContentType = resp.Content.Headers?.ContentType?.MediaType,
-                                StatusCode = 200
-                            };
-                        }
-
-                    } catch (Exception ex) {
-                        Logger.Error(ex);
-                    }
-
-                    break;
+                    var sendResult = await SendRequest(req, rpc);
+                    return sendResult.response;
+                }
             }
-
-            return new OkResult();
         }
 
+        private async Task<(bool result,IActionResult response)> SendRequest(JsonRpcClientReq req, string rpc) {
+            try {
+                using (var client = new HttpClient()) {
+                    var resp = await client.PostAsync(rpc,
+                        new StringContent(
+                            Newtonsoft.Json.JsonConvert.SerializeObject(req),
+                            Encoding.UTF8,
+                            "application/json"));
+
+                    if (!resp.IsSuccessStatusCode) {
+                        return (false,BadRequest(await resp.Content.ReadAsStringAsync()));
+                    }
+
+                    return (true,new ContentResult() {
+                        Content = await resp.Content.ReadAsStringAsync(),
+                        ContentType = resp.Content.Headers?.ContentType?.MediaType,
+                        StatusCode = 200
+                    });
+                }
+            } catch (Exception ex) {
+                Logger.Error(ex);
+                return (false,BadRequest(ex.Message));
+            }
+
+            
+        }
+
+        static EthRpcController() {
+            var chooseType = Startup.Configuration.GetValue<string>("NodeChoose:Choose");
+
+            Logger.Info($"eth choose : {chooseType} ");
+
+            switch (chooseType) {
+                case "NodeChooseByBlockHeight":
+                    NodeChoose = new NodeChooseByBlockHeight(); 
+                    break;
+                case "NodeChooseByRandom":
+                    NodeChoose = new NodeChooseByRandom();
+                    break;
+            }
+        }
     }
 }

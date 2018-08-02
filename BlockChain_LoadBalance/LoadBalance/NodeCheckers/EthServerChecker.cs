@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -13,32 +12,39 @@ using System.Threading.Tasks;
 using System.Timers;
 using log4net;
 using LoadBalance.Models;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace LoadBalance.NodeCheckers
-{
+namespace LoadBalance.NodeCheckers {
     /// <summary>
-    /// ref https://github.com/ethereum/wiki/wiki/JSON-RPC
-    ///
-    /// 
+    ///     ref https://github.com/ethereum/wiki/wiki/JSON-RPC
     /// </summary>
     public class EthServerChecker : INodeChecker {
         private static readonly ILog Logger = LogManager.GetLogger(Log4NetCore.CoreRepository, typeof(EthServerChecker));
-        private ServerDefine _serverDefine;
-        private System.Timers.Timer _timer;
-        private long _curBlockNumber = 0;
-        private long _lastestBlockTime = 0;
-        private int _peerCount = 0;
-        private int _chainId = 0;
-        private bool _isClosed = false;
-        private ChainType _chainType = ChainType.None;
-
-        private Dictionary<int,string>_wsSubScriptionId = new Dictionary<int, string>();
 
         private readonly MemoryStream _memoryStream = new MemoryStream();
-        private System.IO.BinaryWriter _binaryWriter;
+        private BinaryWriter _binaryWriter;
+        private int _chainId;
+        private ChainType _chainType = ChainType.None;
+        private long _curBlockNumber;
+        private bool _isClosed;
+        private bool _isOnline = true;
 
-        private ClientWebSocket _ws = null;
+        /// <summary>
+        ///     count error ,each success reset
+        /// </summary>
+        private int _lastErrorCount;
+
+        private long _lastestBlockTime;
+        private int _peerCount;
+        private ServerDefine _serverDefine;
+        private readonly System.Timers.Timer _timer;
+
+        private ClientWebSocket _ws;
+
+
+        private readonly Dictionary<int, string> _wsSubScriptionId = new Dictionary<int, string>();
 
         public EthServerChecker() {
             _timer = new System.Timers.Timer(1000);
@@ -57,7 +63,7 @@ namespace LoadBalance.NodeCheckers
                 Task.Run(WsRun);
             }
         }
-        
+
         public ServerDefine GetConfig() {
             return _serverDefine;
         }
@@ -75,12 +81,36 @@ namespace LoadBalance.NodeCheckers
         }
 
         public int GetPeersCount() {
-
-            if (!_serverDefine.RpcApi.Contains("admin")) {
+            if (!_serverDefine.RpcApi.Contains("admin"))
                 return -1;
+
+            try {
+                using (var client = new HttpClient()) {
+                    var resp = client.PostAsync(
+                        new Uri(_serverDefine.Rpc),
+                        new StringContent(
+                            JsonConvert.SerializeObject(
+                                new JsonRpcReq {
+                                    Method = "admin_peers"
+                                }),
+                            Encoding.UTF8,
+                            "application/json")).Result;
+
+                    if (!resp.IsSuccessStatusCode)
+                        return -1;
+
+                    var jobj = JArray.Parse(resp.Content.ReadAsStringAsync().Result);
+
+                    ResetErrorCount();
+
+                    _peerCount = jobj.Count;
+
+                    return _peerCount;
+                }
+            } catch (Exception ex) {
+                Logger.Error(ex.Message);
+                AddErrorCount();
             }
-
-
 
             return 0;
         }
@@ -93,25 +123,25 @@ namespace LoadBalance.NodeCheckers
             try {
                 using (var client = new HttpClient()) {
                     var resp = client.PostAsync(
-                        new Uri(_serverDefine.Rpc), 
+                        new Uri(_serverDefine.Rpc),
                         new StringContent(
-                            Newtonsoft.Json.JsonConvert.SerializeObject(
-                                new JsonRpcReq() {
+                            JsonConvert.SerializeObject(
+                                new JsonRpcReq {
                                     Method = "eth_getTransactionCount",
-                                    Params = new object[] {address,"pending"}
-                                }), Encoding.UTF8, "application/json")).Result;
+                                    Params = new object[] {address, "pending"}
+                                }),
+                            Encoding.UTF8,
+                            "application/json")).Result;
 
-                    if (!resp.IsSuccessStatusCode) {
+                    if (!resp.IsSuccessStatusCode)
                         return -1;
-                    }
 
                     var jobj = JObject.Parse(resp.Content.ReadAsStringAsync().Result);
 
-                    return (int) BigInteger.Parse(jobj.Value<string>("result").Replace("0x",""),NumberStyles.HexNumber);
-
+                    return (int) BigInteger.Parse(jobj.Value<string>("result").Replace("0x", ""), NumberStyles.HexNumber);
                 }
             } catch (Exception ex) {
-                Logger.Error(ex);
+                Logger.Error(ex.Message);
             }
 
             return -1;
@@ -126,16 +156,13 @@ namespace LoadBalance.NodeCheckers
         }
 
         public void Destory() {
-
             _timer?.Stop();
             _timer?.Dispose();
 
             _isClosed = true;
             if (_ws != null) {
-
-                if (_ws.State != WebSocketState.Closed && _ws.State != WebSocketState.None) {
-                    _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, String.Empty, CancellationToken.None);
-                }
+                if (_ws.State != WebSocketState.Closed && _ws.State != WebSocketState.None)
+                    _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
 
                 _ws.Dispose();
                 _binaryWriter.Dispose();
@@ -146,23 +173,23 @@ namespace LoadBalance.NodeCheckers
             try {
                 using (var client = new HttpClient()) {
                     var resp = client.PostAsync(
-                        new Uri(_serverDefine.Rpc), 
+                        new Uri(_serverDefine.Rpc),
                         new StringContent(
-                            Newtonsoft.Json.JsonConvert.SerializeObject(
-                                new JsonRpcReq() {
+                            JsonConvert.SerializeObject(
+                                new JsonRpcReq {
                                     Method = "eth_getTransactionByHash",
-                                    Params = new object[]{txid}
-                                }), Encoding.UTF8, "application/json")).Result;
+                                    Params = new object[] {txid}
+                                }),
+                            Encoding.UTF8,
+                            "application/json")).Result;
 
-                    if (!resp.IsSuccessStatusCode) {
+                    if (!resp.IsSuccessStatusCode)
                         return false;
-                    }
 
                     var jobj = JObject.Parse(resp.Content.ReadAsStringAsync().Result);
 
-                    if (jobj["result"] == null) {
+                    if (jobj["result"] == null)
                         return false;
-                    }
 
                     return true;
                 }
@@ -173,22 +200,27 @@ namespace LoadBalance.NodeCheckers
             return false;
         }
 
+        public bool IsOnline() {
+            return _isOnline;
+        }
+
+        public void Stop() {
+            _timer.Stop();
+            _timer.Dispose();
+        }
+
         /// <summary>
-        ///
-        /// in time tick check follow list 
-        /// 1. block chain number height 
-        /// 2. syning status
-        /// 3. 
-        ///
-        /// 
+        ///     in time tick check follow list
+        ///     1. block chain number height
+        ///     2. syning status
+        ///     3.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
         private void OnTimerOnElapsed(object sender, ElapsedEventArgs args) {
             _timer.Stop();
-           
-            try {
 
+            try {
                 var number = GetEthBlockNumber();
 
                 if (number == -1) {
@@ -205,8 +237,6 @@ namespace LoadBalance.NodeCheckers
                 }
 
                 _lastestBlockTime = blocktime;
-
-
             } catch (Exception ex) {
                 Logger.Error(ex);
             }
@@ -222,24 +252,29 @@ namespace LoadBalance.NodeCheckers
             try {
                 using (var client = new HttpClient()) {
                     var resp = client.PostAsync(
-                        new Uri(_serverDefine.Rpc), 
+                        new Uri(_serverDefine.Rpc),
                         new StringContent(
-                            Newtonsoft.Json.JsonConvert.SerializeObject(
-                                new JsonRpcReq() {
+                            JsonConvert.SerializeObject(
+                                new JsonRpcReq {
                                     Method = "eth_blockNumber"
-                    }), Encoding.UTF8, "application/json")).Result;
+                                }),
+                            Encoding.UTF8,
+                            "application/json")).Result;
 
-                    if (!resp.IsSuccessStatusCode) {
+                    if (!resp.IsSuccessStatusCode)
                         return -1;
-                    }
 
                     var jobj = JObject.Parse(resp.Content.ReadAsStringAsync().Result);
 
-                    return (long) BigInteger.Parse(jobj.Value<string>("result").Replace("0x",""),NumberStyles.HexNumber);
+                    var ethBlockNumber = (long) BigInteger.Parse(jobj.Value<string>("result").Replace("0x", ""), NumberStyles.HexNumber);
 
+                    ResetErrorCount();
+
+                    return ethBlockNumber;
                 }
             } catch (Exception ex) {
-                Logger.Error(ex);
+                Logger.Error(ex.Message);
+                AddErrorCount();
             }
 
             return -1;
@@ -249,35 +284,58 @@ namespace LoadBalance.NodeCheckers
             try {
                 using (var client = new HttpClient()) {
                     var resp = client.PostAsync(
-                        new Uri(_serverDefine.Rpc), 
+                        new Uri(_serverDefine.Rpc),
                         new StringContent(
-                            Newtonsoft.Json.JsonConvert.SerializeObject(
-                                new JsonRpcReq() {
+                            JsonConvert.SerializeObject(
+                                new JsonRpcReq {
                                     Method = "eth_getBlockByNumber",
-                                    Params = new object[] {"latest",false}
-                                }), Encoding.UTF8, "application/json")).Result;
+                                    Params = new object[] {"latest", false}
+                                }),
+                            Encoding.UTF8,
+                            "application/json")).Result;
 
-                    if (!resp.IsSuccessStatusCode) {
+                    if (!resp.IsSuccessStatusCode)
                         return -1;
-                    }
 
                     var jobj = JObject.Parse(resp.Content.ReadAsStringAsync().Result);
 
-                    return (long) BigInteger.Parse(jobj["result"].Value<string>("timestamp").Replace("0x",""),NumberStyles.HexNumber);
+                    var lastBlockTime = (long) BigInteger.Parse(jobj["result"].Value<string>("timestamp").Replace("0x", ""), NumberStyles.HexNumber);
 
+                    ResetErrorCount();
+
+                    return lastBlockTime;
                 }
             } catch (Exception ex) {
-                Logger.Error(ex);
+                Logger.Error(ex.Message);
+                AddErrorCount();
             }
 
             return -1;
         }
 
-       
+        private void AddErrorCount() {
+            _lastErrorCount++;
+
+            if (_lastErrorCount >= Startup.Configuration.GetValue<int>("NodeCheck:ErrorThreshold")) {
+                _isOnline = false;
+
+                Logger.Info($"cid:[{_chainId}] rpc:[{_serverDefine.Rpc}] offline");
+            }
+        }
+
+        private void ResetErrorCount() {
+            if (!_isOnline)
+                Logger.Info($"cid:[{_chainId}] rpc:[{_serverDefine.Rpc}] online");
+
+            _isOnline = true;
+
+            _lastErrorCount = 0;
+        }
+
+
         #region Web socket
 
         private async Task WsRun() {
-
             while (!_isClosed) {
                 await WsConnect();
 
@@ -287,9 +345,8 @@ namespace LoadBalance.NodeCheckers
 
         private async Task WsConnect() {
             try {
-                if (_ws.State != WebSocketState.Closed && _ws.State != WebSocketState.None) {
-                    await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure,String.Empty, CancellationToken.None);
-                }
+                if (_ws.State != WebSocketState.Closed && _ws.State != WebSocketState.None)
+                    await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
 
                 await _ws.ConnectAsync(new Uri(_serverDefine.Ws), CancellationToken.None);
 
@@ -297,14 +354,10 @@ namespace LoadBalance.NodeCheckers
             } catch (Exception ex) {
                 Logger.Error(ex);
             }
-            
         }
 
         /// <summary>
-        ///
-        /// https://github.com/ethereum/go-ethereum/wiki/RPC-PUB-SUB
-        /// 
-        /// 
+        ///     https://github.com/ethereum/go-ethereum/wiki/RPC-PUB-SUB
         /// </summary>
         /// <returns></returns>
         private async Task WsSendSub() {
@@ -316,30 +369,27 @@ namespace LoadBalance.NodeCheckers
 
         private async Task WsReceive() {
             try {
-                _binaryWriter.Seek(0,SeekOrigin.Begin);
+                _binaryWriter.Seek(0, SeekOrigin.Begin);
 
                 var buffer = new byte[2048];
                 while (_ws.State == WebSocketState.Open) {
-
-                    if (_isClosed) {
+                    if (_isClosed)
                         return;
-                    }
 
                     var result = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
 
                     switch (result.MessageType) {
                         case WebSocketMessageType.Text: {
-                            _binaryWriter.Write(buffer,0,result.Count);
+                            _binaryWriter.Write(buffer, 0, result.Count);
 
-                            if (!result.EndOfMessage) {
+                            if (!result.EndOfMessage)
                                 continue;
-                            }
 
                             var msg = Encoding.UTF8.GetString(_memoryStream.ToArray());
                             WsProcessMsg(msg);
 
                             _memoryStream.SetLength(0);
-                            _binaryWriter.Seek(0,SeekOrigin.Begin);
+                            _binaryWriter.Seek(0, SeekOrigin.Begin);
                         }
 
                             break;
@@ -354,7 +404,6 @@ namespace LoadBalance.NodeCheckers
             } catch (Exception ex) {
                 Logger.Error(ex);
             }
-            
         }
 
         private void WsProcessMsg(string msg) {
@@ -364,17 +413,16 @@ namespace LoadBalance.NodeCheckers
                 var jobj = JObject.Parse(msg);
 
                 switch (jobj.Value<int>("id")) {
-                        case 1:
-                            _wsSubScriptionId[1] = jobj.Value<string>("result");
-                            break;
-                        case 2:
-                            _wsSubScriptionId[2] = jobj.Value<string>("result");
-                            break;
+                    case 1:
+                        _wsSubScriptionId[1] = jobj.Value<string>("result");
+                        break;
+                    case 2:
+                        _wsSubScriptionId[2] = jobj.Value<string>("result");
+                        break;
                 }
 
-               
-                if (jobj.Value<string>("method") == "eth_subscription") {
 
+                if (jobj.Value<string>("method") == "eth_subscription") {
                     if (_wsSubScriptionId.ContainsKey(1) && jobj["params"]?.Value<string>("subscription") == _wsSubScriptionId[1]) {
                         //newHeads
                         //{
@@ -401,10 +449,9 @@ namespace LoadBalance.NodeCheckers
                         // }
                         // }
 
-                        var number = BigInteger.Parse(jobj["params"]["result"].Value<string>("number").Replace("0x",""),NumberStyles.HexNumber);
+                        var number = BigInteger.Parse(jobj["params"]["result"].Value<string>("number").Replace("0x", ""), NumberStyles.HexNumber);
 
                         WsOnNewBlockNumber(number);
-
                     }
 
                     if (_wsSubScriptionId.ContainsKey(2) && jobj["params"]?.Value<string>("subscription") == _wsSubScriptionId[2]) {
@@ -420,10 +467,7 @@ namespace LoadBalance.NodeCheckers
 
                             WsOnSyncing(syncing, currentBlock, highestBlock);
                         }
-
-                        
                     }
-                    
                 }
             } catch (Exception ex) {
                 Logger.Error(ex);
@@ -432,20 +476,15 @@ namespace LoadBalance.NodeCheckers
 
         private void WsOnSyncing(bool syncing, int currentBlock, int highestBlock) {
             Logger.Info($"on syncing {syncing} cur {currentBlock}  highest {highestBlock}");
-
         }
 
         private void WsOnNewBlockNumber(BigInteger number) {
-            if (number > _curBlockNumber) {
+            if (number > _curBlockNumber)
                 _curBlockNumber = (long) number;
-            }
 
             Logger.Info($"on new block {number} cur {_curBlockNumber}");
         }
 
         #endregion
-
-
-
     }
 }

@@ -22,6 +22,7 @@ namespace LoadBalance {
             CreateWebHostBuilder(args).Build().Run();
 
             RedisHelper.Instance.Destory();
+            NodeChecker.Instance.Stop();
         }
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) {

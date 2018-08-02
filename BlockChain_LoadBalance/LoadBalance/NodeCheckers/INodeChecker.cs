@@ -60,5 +60,8 @@ namespace LoadBalance.NodeCheckers
         /// <returns></returns>
         bool HasTransaction(string txid);
 
+        bool IsOnline();
+
+        void Stop();
     }
 }
