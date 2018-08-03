@@ -63,5 +63,7 @@ namespace LoadBalance.NodeCheckers
         bool IsOnline();
 
         void Stop();
+
+        void PrintSelfInfo();
     }
 }

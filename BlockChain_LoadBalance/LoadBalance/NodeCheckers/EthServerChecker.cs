@@ -59,7 +59,7 @@ namespace LoadBalance.NodeCheckers {
 
             if (!string.IsNullOrEmpty(server.Ws)) {
                 _binaryWriter = new BinaryWriter(_memoryStream);
-                _ws = new ClientWebSocket();
+                
                 Task.Run(WsRun);
             }
         }
@@ -176,6 +176,13 @@ namespace LoadBalance.NodeCheckers {
         public void Stop() {
             _timer.Stop();
             _timer.Dispose();
+        }
+
+        public void PrintSelfInfo() {
+            
+            Logger.Info($"cid:[{_chainId}] rpc: {_serverDefine.Rpc} online :{_isOnline} bn: {_curBlockNumber} pc: {_peerCount} bt: {_lastestBlockTime}");
+
+
         }
 
         /// <summary>
@@ -380,6 +387,12 @@ namespace LoadBalance.NodeCheckers {
 
         private async Task WsConnect() {
             try {
+                _ws?.Dispose();
+                _ws = null;
+
+                _ws = new ClientWebSocket();
+                
+
                 if (_ws.State != WebSocketState.Closed && _ws.State != WebSocketState.None)
                     await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
 
@@ -387,7 +400,7 @@ namespace LoadBalance.NodeCheckers {
 
                 await WsSendSub();
             } catch (Exception ex) {
-                Logger.Error(ex);
+                Logger.Error(ex.Message);
             }
         }
 

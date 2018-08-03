@@ -6,3 +6,25 @@ services:
     build:
       context: .
       dockerfile: LoadBalance/Dockerfile
+  mssql:
+    image: microsoft/mssql-server-linux
+    restart: on-failure
+    ports:
+      - "1433:1433"
+    environment:
+      SA_PASSWORD: "mssqlP@ssw0rd"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Enterprise"
+    volumes:
+      - type: volume
+        source: mssqldata
+        target: /var/opt/mssql/data
+        volume:
+          nocopy: true
+
+  redis:
+    image: redis
+
+
+volumes:
+  mssqldata:

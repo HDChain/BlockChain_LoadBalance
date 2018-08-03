@@ -17,6 +17,8 @@ namespace LoadBalance
         
         private static readonly ILog Logger = LogManager.GetLogger(Log4NetCore.CoreRepository, typeof(NodeChecker));
 
+        private Timer _timer = new Timer(1000 * 60);
+
         public NodeChecker() {
            LoadConfig();
             
@@ -57,7 +59,24 @@ namespace LoadBalance
                 nodeChecker.Start();
             }
 
+            _timer.Elapsed += TimerOnElapsed;
+            _timer.Start();
+
         }
+
+        private void TimerOnElapsed(object sender, ElapsedEventArgs e) {
+            
+            // print node statistics info
+            PrintNodeInfo();
+        }
+
+
+        private void PrintNodeInfo() {
+            foreach (var nodeChecker in _checkers) {
+                nodeChecker.PrintSelfInfo();
+            }
+        }
+
 
         public void Stop() {
             foreach (var nodeChecker in _checkers) {
