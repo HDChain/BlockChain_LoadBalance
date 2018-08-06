@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Timers;
 using log4net;
+using LoadBalance.Db;
 using LoadBalance.Models;
 using LoadBalance.NodeCheckers;
 using Newtonsoft.Json.Linq;
@@ -48,6 +49,12 @@ namespace LoadBalance
                             throw new ArgumentOutOfRangeException();
                     }
                 }
+            }
+
+            var chainids = json.Chains.Select(n => n.ChainId).Distinct().ToArray();
+
+            foreach (var chainid in chainids) {
+                DbMgr.Instance.CreateChainDb(chainid);
             }
         }
 

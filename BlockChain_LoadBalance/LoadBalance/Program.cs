@@ -17,8 +17,7 @@ namespace LoadBalance {
 
             Logger.Debug("start ");
 
-            NodeChecker.Instance.Start();
-
+            
             CreateWebHostBuilder(args).Build().Run();
 
             RedisHelper.Instance.Destory();

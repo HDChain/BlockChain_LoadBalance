@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using LoadBalance.Db;
 using LoadBalance.Redis;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -42,6 +43,8 @@ namespace LoadBalance
             app.UseMvc();
 
             RedisHelper.Instance.Init();
+            DbMgr.Instance.Init();
+            NodeChecker.Instance.Start();
         }
     }
 }

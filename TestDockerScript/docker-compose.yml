@@ -1,0 +1,62 @@
+version: '3.2'
+services:
+  rinkeby1:
+    container_name: test-rinkeby1
+    image: ethereum/client-go
+    ports:
+      - "20001:8545"
+      - "30001:8546"
+      - "40001:30303"
+    entrypoint: geth
+    command: ["--rinkeby", 
+    "--ws", "--wsaddr", "0.0.0.0", "--wsport", "8546", "--wsorigins", "*", 
+    "--datadir", "/.rinkeby", 
+    "--rpc", "--rpcapi", "personal,eth,net", "--rpcaddr", "0.0.0.0", "--rpcport", "8545"]
+    volumes:
+      - type: volume
+        source: data1
+        target: /.rinkeby
+        volume:
+          nocopy: true
+  rinkeby2:
+    container_name: test-rinkeby2
+    image: ethereum/client-go
+    ports:
+      - "20002:8545"
+      - "30002:8546"
+      - "40002:30303"
+    entrypoint: geth
+    command: ["--rinkeby", 
+    "--ws", "--wsaddr", "0.0.0.0", "--wsport", "8546", "--wsorigins", "*", 
+    "--datadir", "/.rinkeby", 
+    "--rpc", "--rpcapi", "personal,eth,net", "--rpcaddr", "0.0.0.0", "--rpcport", "8545"]
+    volumes:
+      - type: volume
+        source: data2
+        target: /.rinkeby
+        volume:
+          nocopy: true
+  rinkeby3:
+    container_name: test-rinkeby3
+    image: ethereum/client-go
+    ports:
+      - "20003:8545"
+      - "30003:8546"
+      - "40003:30303"
+    entrypoint: geth
+    command: ["--rinkeby", 
+    "--ws", "--wsaddr", "0.0.0.0", "--wsport", "8546", "--wsorigins", "*", 
+    "--datadir", "/.rinkeby", 
+    "--rpc", "--rpcapi", "personal,eth,net", "--rpcaddr", "0.0.0.0", "--rpcport", "8545"]
+    volumes:
+      - type: volume
+        source: data3
+        target: /.rinkeby
+        volume:
+          nocopy: true
+
+          
+volumes:
+    data1:
+    data2:
+    data3:

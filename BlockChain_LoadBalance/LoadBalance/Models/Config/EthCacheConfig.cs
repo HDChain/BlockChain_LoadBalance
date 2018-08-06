@@ -7,13 +7,13 @@ namespace LoadBalance.Models.Config
 {
     public class EthCacheConfig
     {
-        public Dictionary<string,EthRpcMethod> Methods = new Dictionary<string, EthRpcMethod>() {
+        public static Dictionary<string,EthRpcMethod> Methods = new Dictionary<string, EthRpcMethod>() {
             //default option
             {"",new EthRpcMethod("",RpcMethodType.Read,RpcCacheStrategy.NotCache)},
 
             //web3
             #region Web3
-            {"web3_clientVersion",new EthRpcMethod("web3_clientVersion",RpcMethodType.Read,RpcCacheStrategy.NotCache)},
+            {"web3_clientVersion",new EthRpcMethod("web3_clientVersion",RpcMethodType.Read,RpcCacheStrategy.CacheInMemory,15)},
             {"web3_sha3",new EthRpcMethod("web3_sha3",RpcMethodType.Read,RpcCacheStrategy.NotCache)},
 
             #endregion
@@ -112,18 +112,20 @@ namespace LoadBalance.Models.Config
 
 
     public class EthRpcMethod {
+        public delegate string ParamToString(JsonRpcClientReq req);
+
         public EthRpcMethod(string method, RpcMethodType rpcMethodType, RpcCacheStrategy rpcCacheStrategy) {
             Method = method;
             RpcMethodType = rpcMethodType;
             RpcCacheStrategy = rpcCacheStrategy;
         }
 
-        public EthRpcMethod(string method, RpcMethodType rpcMethodType, RpcCacheStrategy rpcCacheStrategy,params object[] options) {
+        public EthRpcMethod(string method, RpcMethodType rpcMethodType, RpcCacheStrategy rpcCacheStrategy,int cacheOption , ParamToString paramDelegate = null) {
             Method = method;
             RpcMethodType = rpcMethodType;
             RpcCacheStrategy = rpcCacheStrategy;
-
-
+            CacheOption = cacheOption;
+            ParamDelegate = paramDelegate;
         }
 
         public string Method { get; set; }
@@ -133,6 +135,8 @@ namespace LoadBalance.Models.Config
         public RpcCacheStrategy RpcCacheStrategy { get; set; }
 
         public int CacheOption { get; set; }
+
+        public ParamToString ParamDelegate { get; set; }
     }
 
     

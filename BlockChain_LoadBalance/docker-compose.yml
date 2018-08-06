@@ -6,25 +6,43 @@ services:
     build:
       context: .
       dockerfile: LoadBalance/Dockerfile
-  mssql:
-    image: microsoft/mssql-server-linux
-    restart: on-failure
-    ports:
-      - "1433:1433"
+# mssql:
+#   image: microsoft/mssql-server-linux
+#   restart: on-failure
+#   ports:
+#     - "1433:1433"
+#   environment:
+#     SA_PASSWORD: "mssqlP@ssw0rd"
+#     ACCEPT_EULA: "Y"
+#     MSSQL_PID: "Enterprise"
+#   volumes:
+#     - type: volume
+#       source: mssqldata
+#       target: /var/opt/mssql/data
+#       volume:
+#         nocopy: true
+
+  mysql:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
     environment:
-      SA_PASSWORD: "mssqlP@ssw0rd"
-      ACCEPT_EULA: "Y"
-      MSSQL_PID: "Enterprise"
+      MYSQL_ROOT_PASSWORD: mysqlP@ssw0rd
+    ports:
+      - "3306:3306"
     volumes:
       - type: volume
-        source: mssqldata
-        target: /var/opt/mssql/data
+        source: mysqldata
+        target: /var/lib/mysql
         volume:
           nocopy: true
 
   redis:
     image: redis
+    ports:
+      - "16379:6379"
 
 
 volumes:
-  mssqldata:
+  mssqldata:  
+  mysqldata:

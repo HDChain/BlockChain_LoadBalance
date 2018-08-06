@@ -5,7 +5,7 @@
     <DockerTargetOS>Linux</DockerTargetOS>
     <ProjectGuid>e966dc26-edd1-453e-a575-d77d81d450f9</ProjectGuid>
     <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
-    <DockerServiceUrl>{Scheme}://localhost:{ServicePort}/api/values</DockerServiceUrl>
+    <DockerServiceUrl>{Scheme}://localhost:50000/api/default/Test</DockerServiceUrl>
     <DockerServiceName>loadbalance</DockerServiceName>
   </PropertyGroup>
   <ItemGroup>

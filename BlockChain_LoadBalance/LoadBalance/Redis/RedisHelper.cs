@@ -56,6 +56,41 @@ namespace LoadBalance.Redis {
         public void Destory() {
             RedisEventClient?.Dispose();
         }
-        
+
+        public (bool hasCache,string result) GetRpcCache(int chainid,string reqMethod, string rpcParams) {
+            var key = string.IsNullOrEmpty(rpcParams) ? $"chain:{chainid}:{reqMethod}" : $"chain:{chainid}:{reqMethod}:{rpcParams}";
+
+            try {
+                var db = GetDatabase();
+
+                var val = db.StringGet(key);
+                if (!val.HasValue) {
+                    return (false, string.Empty);
+                }
+
+                return (true, val);
+
+            } catch (Exception ex) {
+                Logger.Error(ex);
+
+                return (false, string.Empty);
+            }
+        }
+
+        public void AddRpcCache(int chainid, string reqMethod, string rpcParams, string result,TimeSpan expiry) {
+            var key = string.IsNullOrEmpty(rpcParams) ? $"chain:{chainid}:{reqMethod}" : $"chain:{chainid}:{reqMethod}:{rpcParams}";
+            
+            try {
+                var db = GetDatabase();
+                if (expiry != TimeSpan.Zero) {
+                    db.StringSet(key, result, expiry);
+                } else {
+                    db.StringSet(key, result);
+                }
+                
+            } catch (Exception ex) {
+                Logger.Error(ex);
+            }
+        }
     }
 }
