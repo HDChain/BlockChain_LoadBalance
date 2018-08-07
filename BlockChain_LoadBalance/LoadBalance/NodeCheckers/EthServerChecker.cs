@@ -358,7 +358,7 @@ namespace LoadBalance.NodeCheckers {
         private void AddErrorCount() {
             _lastErrorCount++;
 
-            if (_lastErrorCount >= Startup.Configuration.GetValue<int>("NodeCheck:ErrorThreshold")) {
+            if (_lastErrorCount >= Startup.GetConfig<int>("NodeCheck.ErrorThreshold")) {
                 _isOnline = false;
 
                 Logger.Info($"cid:[{_chainId}] rpc:[{_serverDefine.Rpc}] offline");

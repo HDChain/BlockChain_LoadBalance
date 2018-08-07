@@ -12,8 +12,8 @@ namespace LoadBalance.Redis {
 
         public void Init() {
             try {
-                RedisEventClient = ConnectionMultiplexer.Connect(Startup.Configuration.GetValue<string>("RedisConn"));
-                RedisCacheTimeOutInSecond = Startup.Configuration.GetValue<int>("RedisCacheTimeOutInSecond");
+                RedisEventClient = ConnectionMultiplexer.Connect(Startup.GetConfig<string>("RedisConn"));
+                RedisCacheTimeOutInSecond = Startup.GetConfig<int>("RedisCacheTimeOutInSecond");
             } catch (Exception ex) {
                 Logger.Error(ex);
             }

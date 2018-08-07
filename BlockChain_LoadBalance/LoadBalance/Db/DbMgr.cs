@@ -14,7 +14,7 @@ namespace LoadBalance.Db
         
 
         public void Init() {
-            switch (Startup.Configuration.GetValue<string>("Db:Type")) {
+            switch (Startup.GetConfig<string>("Db.Type")) {
                 case "mysql":
                     Db = new MySqlDb();
                     Db.CheckAndCreateDatabase(DefaultChainDbName);
