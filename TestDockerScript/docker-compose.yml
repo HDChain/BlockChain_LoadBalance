@@ -11,7 +11,7 @@ services:
     command: ["--rinkeby", 
     "--ws", "--wsaddr", "0.0.0.0", "--wsport", "8546", "--wsorigins", "*", 
     "--datadir", "/.rinkeby", 
-    "--rpc", "--rpcapi", "personal,eth,net", "--rpcaddr", "0.0.0.0", "--rpcport", "8545"]
+    "--rpc", "--rpcapi", "personal,eth,net,web3", "--rpcaddr", "0.0.0.0", "--rpcport", "8545"]
     volumes:
       - type: volume
         source: data1
@@ -29,7 +29,7 @@ services:
     command: ["--rinkeby", 
     "--ws", "--wsaddr", "0.0.0.0", "--wsport", "8546", "--wsorigins", "*", 
     "--datadir", "/.rinkeby", 
-    "--rpc", "--rpcapi", "personal,eth,net", "--rpcaddr", "0.0.0.0", "--rpcport", "8545"]
+    "--rpc", "--rpcapi", "personal,eth,net,web3", "--rpcaddr", "0.0.0.0", "--rpcport", "8545"]
     volumes:
       - type: volume
         source: data2
@@ -47,7 +47,7 @@ services:
     command: ["--rinkeby", 
     "--ws", "--wsaddr", "0.0.0.0", "--wsport", "8546", "--wsorigins", "*", 
     "--datadir", "/.rinkeby", 
-    "--rpc", "--rpcapi", "personal,eth,net", "--rpcaddr", "0.0.0.0", "--rpcport", "8545"]
+    "--rpc", "--rpcapi", "personal,eth,net,web3", "--rpcaddr", "0.0.0.0", "--rpcport", "8545"]
     volumes:
       - type: volume
         source: data3

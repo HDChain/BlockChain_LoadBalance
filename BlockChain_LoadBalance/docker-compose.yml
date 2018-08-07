@@ -6,6 +6,11 @@ services:
     build:
       context: .
       dockerfile: LoadBalance/Dockerfile
+    ports:
+      - "50000:50000"
+    depends_on:
+      - mysql
+      - redis
 # mssql:
 #   image: microsoft/mssql-server-linux
 #   restart: on-failure
@@ -30,18 +35,26 @@ services:
       MYSQL_ROOT_PASSWORD: mysqlP@ssw0rd
     ports:
       - "3306:3306"
-    volumes:
-      - type: volume
-        source: mysqldata
-        target: /var/lib/mysql
-        volume:
-          nocopy: true
+#   volumes:
+#     - type: volume
+#       source: mysqldata
+#       target: /var/lib/mysql
+#       volume:
+#         nocopy: true
 
   redis:
     image: redis
     ports:
       - "16379:6379"
 
+
+# xunittestproject1:
+#   image: ${DOCKER_REGISTRY}xunittestproject1
+#   depends_on:
+#     - loadbalance
+#   build:
+#     context: .
+#     dockerfile: XUnitTestProject1/Dockerfile
 
 volumes:
   mssqldata:  
