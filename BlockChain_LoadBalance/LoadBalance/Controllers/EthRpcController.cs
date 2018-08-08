@@ -7,11 +7,15 @@ using System.Text;
 using System.Threading.Tasks;
 using log4net;
 using LoadBalance.Models;
+using LoadBalance.Models.Cache;
+using LoadBalance.Models.Config;
 using LoadBalance.NodeChoose;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Nethereum.Signer;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LoadBalance.Controllers
 {
@@ -55,21 +59,62 @@ namespace LoadBalance.Controllers
                     }
 
                     var sendResult = await SendRequest(req, rpc);
-                    return sendResult.response;
+                    if (sendResult.result) {
+                        return new ContentResult() {
+                            Content = sendResult.response,
+                            ContentType = "application/json",
+                            StatusCode = 200
+                        };
+                    }
+                    return BadRequest(sendResult.response);
                 }
                 default: {
+                    var cache = EthRpcCache.Instance.CheckCache(chainid, req);
+                    if (cache.hasCache) {
+
+                        Logger.Debug($"{req} in cache");
+                        
+                        //update resp id
+                        var respObj = JObject.Parse(cache.result);
+                        respObj["id"] = req.Id;
+
+                        return new ContentResult() {
+                            Content = respObj.ToString(Formatting.None),
+                            ContentType = "application/json",
+                            StatusCode = 200
+                        };
+                    }
+
                     var rpc = NodeChoose.ChooseServer(chainid);
                     if (string.IsNullOrEmpty(rpc)) {
                         return BadRequest("not find suitable rpc server");
                     }
 
                     var sendResult = await SendRequest(req, rpc);
-                    return sendResult.response;
+                    if (sendResult.result) {
+                        switch (cache.strategy) {
+                            case RpcCacheStrategy.NotCache:
+                                break;
+                            case RpcCacheStrategy.CacheInMemory:
+                            case RpcCacheStrategy.CacheInDb:
+                                EthRpcCache.Instance.AddCache(chainid,req,sendResult.response);
+                                break;
+                        }
+                        return new ContentResult() {
+                            Content = sendResult.response,
+                            ContentType = "application/json",
+                            StatusCode = 200
+                        };
+                    }
+
+                    return BadRequest(sendResult.response);
+
+
                 }
             }
         }
 
-        private async Task<(bool result,IActionResult response)> SendRequest(JsonRpcClientReq req, string rpc) {
+        private async Task<(bool result,string response)> SendRequest(JsonRpcClientReq req, string rpc) {
             try {
                 using (var client = new HttpClient()) {
                     var resp = await client.PostAsync(rpc,
@@ -79,18 +124,14 @@ namespace LoadBalance.Controllers
                             "application/json"));
 
                     if (!resp.IsSuccessStatusCode) {
-                        return (false,BadRequest(await resp.Content.ReadAsStringAsync()));
+                        return (false,await resp.Content.ReadAsStringAsync());
                     }
 
-                    return (true,new ContentResult() {
-                        Content = await resp.Content.ReadAsStringAsync(),
-                        ContentType = resp.Content.Headers?.ContentType?.MediaType,
-                        StatusCode = 200
-                    });
+                    return (true,await resp.Content.ReadAsStringAsync());
                 }
             } catch (Exception ex) {
                 Logger.Error(ex);
-                return (false,BadRequest(ex.Message));
+                return (false,ex.Message);
             }
 
             

@@ -41,7 +41,7 @@ namespace LoadBalance
             {
                 app.UseDeveloperExceptionPage();
             }
-            
+
             app.UseMvc();
 
             Init();

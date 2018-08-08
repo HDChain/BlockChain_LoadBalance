@@ -42,6 +42,10 @@ namespace LoadBalance.Models {
 
         [JsonProperty("id")]
         public int Id { get; set; }
+
+        public override string ToString() {
+            return Newtonsoft.Json.JsonConvert.SerializeObject(this);
+        }
     }
      
     /// <summary>

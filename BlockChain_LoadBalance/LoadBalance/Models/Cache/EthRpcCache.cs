@@ -6,7 +6,7 @@ using LoadBalance.Redis;
 namespace LoadBalance.Models.Cache {
     public class EthRpcCache : Singleton<EthRpcCache> {
         public (bool hasCache, string result, RpcCacheStrategy strategy) CheckCache(int chainid, JsonRpcClientReq req) {
-            if (EthCacheConfig.Methods.ContainsKey(req.Method))
+            if (!EthCacheConfig.Methods.ContainsKey(req.Method))
                 return (false, string.Empty,RpcCacheStrategy.NotCache);
 
             var config = EthCacheConfig.Methods[req.Method];
@@ -30,7 +30,7 @@ namespace LoadBalance.Models.Cache {
         }
 
         public void AddCache(int chainid,JsonRpcClientReq req, string result) {
-            if (EthCacheConfig.Methods.ContainsKey(req.Method))
+            if (!EthCacheConfig.Methods.ContainsKey(req.Method))
                 return;
 
             var config = EthCacheConfig.Methods[req.Method];
