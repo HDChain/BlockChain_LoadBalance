@@ -26,6 +26,19 @@ namespace LoadBalance.Db
             }
         }
 
+        public bool CheckDbReady() {
+            try {
+                using (var db = new MySqlConnection(SysConnectionString)) {
+
+                    db.Open();
+                }
+
+                return true;
+            } catch {
+                return false;
+            }
+        }
+
         public bool CreateDatabase(string dbname) {
             try {
                 using (var db = new MySqlConnection(SysConnectionString)) {

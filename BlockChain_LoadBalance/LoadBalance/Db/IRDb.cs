@@ -5,6 +5,8 @@ namespace LoadBalance.Db {
     public interface IRDb {
         string[] GetDataBaseList();
 
+        bool CheckDbReady();
+
         bool CreateDatabase(string db);
         bool CheckAndCreateDatabase(string db);
 

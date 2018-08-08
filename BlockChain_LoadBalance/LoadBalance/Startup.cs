@@ -53,8 +53,9 @@ namespace LoadBalance
 
             ConfigJson = JObject.Parse(File.ReadAllText(jsonPath));
 
-            RedisHelper.Instance.Init();
+            
             DbMgr.Instance.Init();
+            RedisHelper.Instance.Init();
             NodeChecker.Instance.Start();
 
 

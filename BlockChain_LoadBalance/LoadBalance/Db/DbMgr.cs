@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using log4net;
 using Microsoft.Extensions.Configuration;
 
 namespace LoadBalance.Db
@@ -10,6 +11,7 @@ namespace LoadBalance.Db
         private IRDb Db = null;
 
         private const string DefaultChainDbName = "ChainMain";
+        private static readonly ILog Logger = LogManager.GetLogger(Log4NetCore.CoreRepository, typeof(DbMgr));
 
         
 
@@ -17,6 +19,15 @@ namespace LoadBalance.Db
             switch (Startup.GetConfig<string>("Db.Type")) {
                 case "mysql":
                     Db = new MySqlDb();
+
+                    while (!Db.CheckDbReady()) {
+                        Logger.Info("my sql is not ready");                
+
+                        System.Threading.Thread.Sleep(10000);
+                    }
+
+                    Logger.Info("my sql is ready");
+
                     Db.CheckAndCreateDatabase(DefaultChainDbName);
                     break;
                 default:
