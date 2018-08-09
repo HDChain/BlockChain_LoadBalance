@@ -77,7 +77,8 @@ namespace LoadBalance.Controllers
                         //update resp id
                         var respObj = JObject.Parse(cache.result);
                         respObj["id"] = req.Id;
-
+                        respObj["cache"] = cache.strategy.ToString();
+                            
                         return new ContentResult() {
                             Content = respObj.ToString(Formatting.None),
                             ContentType = "application/json",
@@ -92,16 +93,20 @@ namespace LoadBalance.Controllers
 
                     var sendResult = await SendRequest(req, rpc);
                     if (sendResult.result) {
+                        var respObj = JObject.Parse(sendResult.response);
+
                         switch (cache.strategy) {
                             case RpcCacheStrategy.NotCache:
                                 break;
                             case RpcCacheStrategy.CacheInMemory:
                             case RpcCacheStrategy.CacheInDb:
-                                EthRpcCache.Instance.AddCache(chainid,req,sendResult.response);
+                                var cacheResult = EthRpcCache.Instance.AddCache(chainid,req,sendResult.response);
+                                respObj["cacheOption"] = cache.strategy.ToString();
+                                respObj["cacheResult"] = cacheResult;
                                 break;
                         }
                         return new ContentResult() {
-                            Content = sendResult.response,
+                            Content = respObj.ToString(Formatting.None),
                             ContentType = "application/json",
                             StatusCode = 200
                         };

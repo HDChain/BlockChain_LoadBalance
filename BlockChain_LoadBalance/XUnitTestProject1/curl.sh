@@ -1,18 +1,22 @@
 #!/bin/bash 
 
-id=0
-getid(){
-    return $(($id+1))
-} 
-
-set -v
-
-getid
-let id=$?
-curl -X POST --data '{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":'$id'}' -H "Content-Type: application/json" http://127.0.0.1:50000/ethrpc/1
-
-getid
-let id=$?
-curl -X POST --data '{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":'$id'}' -H "Content-Type: application/json" http://127.0.0.1:50000/ethrpc/1
+source ./testscript/base.sh
+source ./testscript/testeth.sh
 
 
+#set -v
+
+case $1 in
+web3)
+	test_ethweb3
+	;;
+eth)
+	test_etheth
+	;;
+h)
+	test_height
+	;;
+*)
+	printhelp
+	;;
+esac

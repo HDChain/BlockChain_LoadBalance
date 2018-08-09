@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using LoadBalance.Models.Cache;
 
 namespace LoadBalance.Models.Config
 {
@@ -54,7 +55,7 @@ namespace LoadBalance.Models.Config
             {"eth_call",new EthRpcMethod("eth_call",RpcMethodType.Read,RpcCacheStrategy.NotCache)},
             {"eth_estimateGas",new EthRpcMethod("eth_estimateGas",RpcMethodType.Read,RpcCacheStrategy.NotCache)},
             {"eth_getBlockByHash",new EthRpcMethod("eth_getBlockByHash",RpcMethodType.Read,RpcCacheStrategy.NotCache)},
-            {"eth_getBlockByNumber",new EthRpcMethod("eth_getBlockByNumber",RpcMethodType.Read,RpcCacheStrategy.NotCache)},
+            {"eth_getBlockByNumber",new EthRpcMethod("eth_getBlockByNumber",RpcMethodType.Read,RpcCacheStrategy.CacheInDb,0,RpcJsonParamsToString.StringSplitParam,RpcCacheFilter.EthCacheFilter)},
             {"eth_getTransactionByHash",new EthRpcMethod("eth_getTransactionByHash",RpcMethodType.Read,RpcCacheStrategy.NotCache)},
             {"eth_getTransactionByBlockHashAndIndex",new EthRpcMethod("eth_getTransactionByBlockHashAndIndex",RpcMethodType.Read,RpcCacheStrategy.NotCache)},
             {"eth_getTransactionByBlockNumberAndIndex",new EthRpcMethod("eth_getTransactionByBlockNumberAndIndex",RpcMethodType.Read,RpcCacheStrategy.NotCache)},
@@ -114,18 +115,21 @@ namespace LoadBalance.Models.Config
     public class EthRpcMethod {
         public delegate string ParamToString(JsonRpcClientReq req);
 
+        public delegate bool CacheFilter(int chainid,JsonRpcClientReq req,string result);
+
         public EthRpcMethod(string method, RpcMethodType rpcMethodType, RpcCacheStrategy rpcCacheStrategy) {
             Method = method;
             RpcMethodType = rpcMethodType;
             RpcCacheStrategy = rpcCacheStrategy;
         }
 
-        public EthRpcMethod(string method, RpcMethodType rpcMethodType, RpcCacheStrategy rpcCacheStrategy,int cacheOption , ParamToString paramDelegate = null) {
+        public EthRpcMethod(string method, RpcMethodType rpcMethodType, RpcCacheStrategy rpcCacheStrategy,int cacheOption , ParamToString paramDelegate = null,CacheFilter filter = null) {
             Method = method;
             RpcMethodType = rpcMethodType;
             RpcCacheStrategy = rpcCacheStrategy;
             CacheOption = cacheOption;
             ParamDelegate = paramDelegate;
+            FilterDelegate = filter;
         }
 
         public string Method { get; set; }
@@ -137,6 +141,8 @@ namespace LoadBalance.Models.Config
         public int CacheOption { get; set; }
 
         public ParamToString ParamDelegate { get; set; }
+
+        public CacheFilter FilterDelegate { get; set; }
     }
 
     

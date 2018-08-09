@@ -101,16 +101,24 @@ namespace LoadBalance.Db
                 
                 using (var db = new MySqlConnection(GetChainConnectStringById(chainid))) {
 
-                    var row = db.QueryFirst("select * from RpcCache where method=@method and params=@params;", new {
-                        method = reqMethod,
-                        @params = rpcParams
-                    });
+                    dynamic row ;
 
+                    if (rpcParams == null) {
+                        row = db.QueryFirstOrDefault("select * from RpcCache where method=@method and params is null;", new {
+                            method = reqMethod,
+                        });
+                    } else {
+                        row = db.QueryFirstOrDefault("select * from RpcCache where method=@method and params=@params;", new {
+                            method = reqMethod,
+                            @params = rpcParams
+                        });
+                    }
+                    
                     if (row == null) {
                         return (false, string.Empty);
                     }
 
-                    if (row.expiretime < DateTime.Now.Ticks) {
+                    if (row.expiretime > 0 && row.expiretime < DateTime.Now.Ticks) {
 
                         db.Execute("delete from RpcCache where id=@id",new {
                             row.id
@@ -132,11 +140,31 @@ namespace LoadBalance.Db
         public void AddRpcCache(int chainid, string reqMethod, string reqParams, string result, TimeSpan timeSpan) {
             try {
                 using (var db = new MySqlConnection(GetChainConnectStringById(chainid))) {
+
+                    if (reqParams == null) {
+                        db.Execute("delete from RpcCache where method=@method and params is null;",new {
+                            method = reqMethod,
+                            @params = reqParams,
+                        });
+                    } else {
+                        db.Execute("delete from RpcCache where method=@method and params=@params;",new {
+                            method = reqMethod,
+                            @params = reqParams,
+                        });
+                    }
                     
-
-
-
-
+                    
+                    db.Execute(@"INSERT INTO `Chain_1`.`RpcCache`
+                        (`method`,
+                        `params`,
+                        `expiretime`,
+                        `result`)
+                    VALUES (@method,@params,@expiretime,@result);", new {
+                        method = reqMethod,
+                        @params = reqParams,
+                        expiretime = timeSpan == TimeSpan.Zero ? 0 : (uint)DateTime.Now.Add(timeSpan).Ticks,
+                        result 
+                    });
                 }
             } catch (Exception ex) {
                 Logger.Error(ex);

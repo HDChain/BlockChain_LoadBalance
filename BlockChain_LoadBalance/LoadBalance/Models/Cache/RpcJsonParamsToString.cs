@@ -11,7 +11,9 @@ namespace LoadBalance.Models.Cache
             return string.Empty;
         }
 
-
+        public static string StringSplitParam(JsonRpcClientReq req) {
+            return string.Join("|",req.Params);
+        }
 
     }
 }
