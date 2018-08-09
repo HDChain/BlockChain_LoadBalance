@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using log4net;
+using LoadBalance.Auth;
 using LoadBalance.Models;
 using LoadBalance.Models.Cache;
 using LoadBalance.Models.Config;
@@ -35,11 +36,13 @@ namespace LoadBalance.Controllers
         private static readonly ILog Logger = LogManager.GetLogger(Log4NetCore.CoreRepository, typeof(EthRpcController));
         private static INodeChoose NodeChoose = null;
 
+        [RpcAuth]
         [HttpGet]
         public IActionResult Get() {
-            return new OkResult();
+            return Ok("ok");
         }
 
+        [RpcAuth]
         [HttpPost]
         public async Task<IActionResult> Post(JsonRpcClientReq req,int chainid = 0) {
 

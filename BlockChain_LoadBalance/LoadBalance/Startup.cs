@@ -62,7 +62,11 @@ namespace LoadBalance
         }
 
         public static T GetConfig<T>(string path) {
-            return ConfigJson.SelectToken(path).ToObject<T>();
+            var token = ConfigJson.SelectToken(path);
+            if (token == null) {
+                return default(T);
+            }
+            return token.ToObject<T>();
         }
     }
 }
